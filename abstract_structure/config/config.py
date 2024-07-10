@@ -76,7 +76,7 @@ def get_config_dict():
     weight_info = dict(
         save_model_name = 'model.pth',
         save_checkpoint_path = 'checkpoint.pth',
-        from_checkpoint = None.,
+        from_checkpoint = None,
     )
     #
     device = dict(device = 'cuda' if torch.cuda.is_available() else 'cpu')
