@@ -74,7 +74,8 @@ def get_config_dict():
 
     scheduler = dict(
         name='LambdaLR',
-        lr_lambda=lambda epoch:0.95 ** epoch
+        lr_lambda=lambda epoch:0.95 ** epoch,
+        max_epoch=20,
     )
 
     weight_info = dict(
