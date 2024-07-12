@@ -63,7 +63,7 @@ def get_config_dict():
     )
 
     model = dict(
-        name='GPT_Generation',
+        name='GPT',
     )
 
     solver = dict(
