@@ -23,6 +23,8 @@ import torch.optim as optim
 from torch.optim import AdamW as Adam
 from torch.nn import LayerNorm
 
+from abstract_structure.config.train_config import Config
+
 # ================ Attention ================
 class BaseAttention(nn.Module):
     """
@@ -332,64 +334,38 @@ class Transformer(nn.Module):
     output 2 (**)   float           (..., past_len + seq_len, dims)
     ===========================================================================
     """
-    def __init__(self,
-                 layers: int,
-                 pad_idx: int,
-                 words: int,
-                 special_char: int,
-                 seq_len: int,
-                 heads: int,
-                 dims: int,
-                 rate: int = 4,
-                 dropout: float = 0.1,
-                 training: bool = True,
-                 bidirectional: bool = True):
+    def __init__(self, config, words:int, dropout:float=0.1, training:bool=True, bidirectional:bool=True):
         super().__init__()
 
+        from abstract_structure.config.generation_config import get_generation_config
+        self.cfg = Config(config)
         self.training = training
 
         self.bidirectional = bidirectional
-        self.pad_masking = PadMasking(pad_idx)
+        self.pad_masking = PadMasking(self.cfg['pad_idx'])
         self.future_masking = FutureMasking()
 
-        self.positional_embedding = PositionalEmbedding(seq_len, dims)
-        self.token_embedding = TokenEmbedding(words + special_char, dims)
+        self.positional_embedding = PositionalEmbedding(self.cfg['n_seq'], self.cfg['d_hidn'])
+        self.token_embedding = TokenEmbedding(words + self.cfg["n_special_char"], self.cfg['d_hidn'])
         self.dropout_embedding = nn.Dropout(dropout)
 
         self.transformers = nn.ModuleList([
-            TransformerLayer(heads, dims, rate, training, dropout)
-            for _ in range(layers)])
-        self.ln_head = LayerNorm(dims)
+            TransformerLayer(self.cfg['n_head'], self.cfg['d_hidn'], self.cfg['rate'], training, dropout)
+            for _ in range(self.cfg['n_layer'])])
+        self.ln_head = LayerNorm(self.cfg['d_hidn'])
 
     def forward(self,
                 x: torch.Tensor,
                 past = None
                 ):
-        # past �� ���� transformer �������� MSA �� ���� ���� (k, v) �� ����.
-        #     shape of k: (..., kv_len, dims)
-        #     shape of v: (..., kv_len, dims)
-        # past[0] = k
-        # past[0][0].size(-2) = kv_len (���� colab ���� ����, pycharm ���� ������ ���� ��)
-        #
-        # past �� ���� �������� ���� x �� �������� ���� ������ transformer layers �� ���� ���� ��.
-        # ���� ������ ������ �������� offset
-        # AttentionLayer �� ���� ���� past ���� ���� ��, k �� v �� past �� ���� ��.
-        # ���� k = torch.cat((past[0], k), dim=-2) ������ concatenate �� ���� ������
-        # past ���� ���� k ������ ���� ���������� ���� ������ ���� ������ ��.
-        # ������ offset ������ ���� ������ positional embedding ����
-        # masking ���� ������ �� �� ���� ���� concatenate �� ������������ ����.
+
         offset = past[0][0].size(-2) if past is not None else 0
 
         # Create masking tensor.
         mask = self.pad_masking(x, offset)
         if not self.bidirectional:
-            # bidirectional = True ����
-            # transformer �� ������ �������� ������ ���� �� ���� ������ ���� ���� ��.
-            # ��, ���� BERT ������ ���� ���������� �� �� ����.
-            # bidirectional = False ���� ���������� ���� future_masking �� ������
-            # ���� ������ ���� �������� ��.
             mask = mask + self.future_masking(x, offset)
-            mask = mask.to(x.device)
+            mask = mask.to(x.to(self.device))
 
         # Use token embedding and positional embedding layers.
         x = self.token_embedding(x) + self.positional_embedding(x, offset)
