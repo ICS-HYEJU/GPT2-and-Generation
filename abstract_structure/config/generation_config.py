@@ -44,6 +44,8 @@ def get_generation_config():
         n_head=4,
         d_hidn=1024,
         #
+        model_name="GPT_Generation",
+        #
         rate=4,
         dropout=0.1,
         pad_idx=0,
@@ -51,7 +53,7 @@ def get_generation_config():
         n_sample=5,
         #
         from_saved_model="model_weight.pth",     # load last training state from checkpoint file
-        device = 1
+        device=1
     )
 
     config = Config(config_info)
