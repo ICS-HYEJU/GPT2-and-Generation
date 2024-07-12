@@ -34,11 +34,13 @@ class Config(dict):
 
 def get_config_dict():
     dataset_info = dict(
+        dataset_name="kowiki_small",
         train_corpus="corpus.txt",
         eval_corpus="corpus.txt",
+        corpus_path="/storage/hjchoi/kowiki",
         #
-        dataset_name="kowiki_small",
-        vocab_path="kowiki_small.model",
+        model_path = "/storage/hjchoi/kowiki/kowiki_small.model",
+        vocab_path="/storage/hjchoi/kowiki/kowiki_small.vocab",
         n_vocab=8000,
         n_special_char=7,
         #
@@ -96,4 +98,4 @@ def get_config_dict():
         device=device
     )
 
-    return config
+    return Config(config)
