@@ -40,7 +40,7 @@ class BaseAttention(nn.Module):
        """
     def __init__(self, dropout:float=0.1):
         super().__init__()
-        self.dropout=nn.Dropout(dropout)
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self,
                 q:torch.Tensor,
@@ -56,7 +56,7 @@ class BaseAttention(nn.Module):
 
         return torch.matmul(x, v)
 
-class MultiHeadAttention(nn.Module):
+class MultiHeadAttention(BaseAttention):
     """
         Tensor          Type            Shape
         ===========================================================================
@@ -70,7 +70,6 @@ class MultiHeadAttention(nn.Module):
     """
     def __init__(self, heads:int, dropout:float=0.1):
         super().__init__()
-        self.dropout=dropout
         self.heads = heads
 
     def forward(self,
@@ -101,7 +100,7 @@ class MultiHeadAttention(nn.Module):
         out_MSA = super().forward(q, k, v, mask)
         # Shape of out_MSA:
 
-        out_MSA = out_MSA.view(q.size()[:-3] + (q.size(-2), v.size(-1)  * self.heads))
+        out_MSA = out_MSA.view(q.size()[:-3] + (q.size(-2), v.size(-1) * self.heads))
         # Shape of out_MSA:
         return out_MSA
 
@@ -133,7 +132,7 @@ class AttentionLayer(nn.Module):
                 v:torch.Tensor,
                 past=None,
                 mask=None):
-        q, k, v =self.proj_q(q), self.proj_k(k),self.proj_v(v)
+        q, k, v = self.proj_q(q), self.proj_k(k), self.proj_v(v)
 
         # Reuse attention keys and values by concatenating to the current ones.
         if past is not None:
@@ -334,11 +333,10 @@ class Transformer(nn.Module):
     output 2 (**)   float           (..., past_len + seq_len, dims)
     ===========================================================================
     """
-    def __init__(self, config, words:int, dropout:float=0.1, training:bool=True, bidirectional:bool=True):
+    def __init__(self, config, dropout:float=0.1, training:bool=True, bidirectional:bool=True):
         super().__init__()
 
-        from abstract_structure.config.generation_config import get_generation_config
-        self.cfg = Config(config)
+        self.cfg = Config(config.dataset_info)
         self.training = training
 
         self.bidirectional = bidirectional
@@ -346,7 +344,7 @@ class Transformer(nn.Module):
         self.future_masking = FutureMasking()
 
         self.positional_embedding = PositionalEmbedding(self.cfg['n_seq'], self.cfg['d_hidn'])
-        self.token_embedding = TokenEmbedding(words + self.cfg["n_special_char"], self.cfg['d_hidn'])
+        self.token_embedding = TokenEmbedding(self.cfg["n_vocab"] + self.cfg["n_special_char"], self.cfg['d_hidn'])
         self.dropout_embedding = nn.Dropout(dropout)
 
         self.transformers = nn.ModuleList([
@@ -356,8 +354,7 @@ class Transformer(nn.Module):
 
     def forward(self,
                 x: torch.Tensor,
-                past = None
-                ):
+                past=None):
 
         offset = past[0][0].size(-2) if past is not None else 0
 
@@ -365,7 +362,7 @@ class Transformer(nn.Module):
         mask = self.pad_masking(x, offset)
         if not self.bidirectional:
             mask = mask + self.future_masking(x, offset)
-            mask = mask.to(x.to(self.device))
+            mask = mask.to(x.device)
 
         # Use token embedding and positional embedding layers.
         x = self.token_embedding(x) + self.positional_embedding(x, offset)
@@ -377,7 +374,7 @@ class Transformer(nn.Module):
             x = transformer(x, past[i] if past is not None else None, mask)
 
             if not self.training:
-                present.append(x[1])  # (k, v) ���� ��. ==> ���� �������� past �� ��.
+                present.append(x[1])
                 x = x[0]
 
         x = self.ln_head(x)

@@ -38,13 +38,11 @@ def get_config_dict():
         train_corpus="corpus.txt",
         eval_corpus="corpus.txt",
         corpus_path="/storage/hjchoi/kowiki",
+        vocab_path="/storage/hjchoi/kowiki/kowiki_small.model",
         #
-        model_path = "/storage/hjchoi/kowiki/kowiki_small.model",
-        vocab_path="/storage/hjchoi/kowiki/kowiki_small.vocab",
         n_vocab=8000,
         n_special_char=7,
-        #
-        n_seq=64,
+        n_seq=256 + 1, # 1 == [PAD]
         n_layer=6,
         n_head=4,
         d_hidn=1024,
@@ -53,29 +51,30 @@ def get_config_dict():
         dropout=0.1,
         pad_idx=0,
         #
-        batch_train=64,
-        batch_eval=64,
+        batch_train=2,
+        batch_eval=2,
         epoch=100,
     )
 
     path = dict(
-        save_base_path='runs',
+        save_base_path='/home/hjchoi/PycharmProjects/GPT2-and-Generation/abstract_structure/runs',
     )
 
     model = dict(
         name='GPT',
+        generator_name = "GPT_Generation"
     )
 
     solver = dict(
         name='Adam',
         base_lr=1e-4,
         weight_decay=1e-2,
+        max_epoch=20,
     )
 
     scheduler = dict(
         name='LambdaLR',
         lr_lambda=lambda epoch:0.95 ** epoch,
-        max_epoch=20,
     )
 
     weight_info = dict(
@@ -87,7 +86,11 @@ def get_config_dict():
     device = dict(
         gpu_id=1,
     )
-
+    generation_info=dict(
+        nucleus_prob=0.75,
+        n_sample=5,
+        from_saved_model="model_weight.pth"
+    )
     # Merge all info into a dictionary variable
     config = dict(
         dataset_info=dataset_info,
@@ -96,6 +99,7 @@ def get_config_dict():
         solver=solver,
         scheduler=scheduler,
         weight_info=weight_info,
+        generation_info=generation_info,
         device=device
     )
 
