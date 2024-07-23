@@ -23,11 +23,10 @@ import torch.optim as optim
 from torch.optim import AdamW as Adam
 from torch.nn import LayerNorm
 
-from abstract_structure.config.train_config import Config
 
 class GPT2Generation():
     def __init__(self,cfg, device):
-        self.cfg = Config(cfg)
+        self.cfg = cfg
         self.device = device
         self.saved_vocab = self.cfg.dataset_info['vocab_path']
         #
@@ -50,8 +49,8 @@ class GPT2Generation():
         return vocab
 
     def construct_model(self) -> nn.Module:
-        from abstract_structure.model.gpt import Transformer
-        ge_model = Transformer(config=self.cfg, dropout=0, training=False, bidirectional=False)
+        from abstract_structure.model.gpt import ModelEngine
+        ge_model = ModelEngine(config=self.cfg, dropout=0, training=False, bidirectional=False)
         print("[Transformer] Loading Completed...")
 
         return ge_model.to(self.device)

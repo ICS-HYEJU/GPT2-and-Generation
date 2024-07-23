@@ -23,10 +23,10 @@ import torch.optim as optim
 from torch.optim import AdamW as Adam
 from torch.nn import LayerNorm
 
-from abstract_structure.config.train_config import Config
+
 class Engine():
     def __init__(self, cfg, mode, device):
-        self.cfg = Config(cfg)
+        self.cfg = cfg
         self.mode = mode
         self.device = device
 
@@ -65,24 +65,24 @@ class Engine():
         return nn.CrossEntropyLoss(ignore_index=self.cfg.dataset_info['pad_idx'], reduction='mean').to(self.device)
 
     def build_scheduler(self):
-        from abstract_structure.solver.fn_scheduler import build_scheduler
+        from solver.fn_scheduler import build_scheduler
         return build_scheduler(self.cfg, self.optimizer)
 
     def build_optimizer(self):
-        from abstract_structure.solver.fn_optimizer import build_optimizer
+        from solver.fn_optimizer import build_optimizer
         return build_optimizer(self.cfg, self.model)
 
     def build_model(self):
         name = self.cfg.model['name']
         if name == "GPT":
-            from abstract_structure.model.gpt import Transformer
-            model = Transformer(self.cfg)
+            from model.gpt import ModelEngine
+            model = ModelEngine(self.cfg)
         else:
             raise NotImplementedError(f'The required model is not implemented yet..')
         return model.to(self.device)
 
     def get_dataloader(self):
-        from abstract_structure.dataset import create_dataloader
+        from dataset import create_dataloader
         dataloader = create_dataloader(self.cfg, mode=self.mode)
         return dataloader
 
@@ -96,22 +96,22 @@ class Engine():
         self.model.train()
         self.optimizer.zero_grad()
         losses = []
-        with tqdm(total=len(self.dataloader), desc=f"Train({epoch})", leave=True) as pbar:
-            for step, data in enumerate(self.dataloader):
-                # data[0] = inputs
-                # data[1] = outputs
-                # data[2] = item
-                logits = self.model((data[0]).to(self.device))
-                # Shape of logits :
-                # Shape of logits.view(-1, logits.size(2)) :
-                # shape of data['output'].view(-1)  :
-                loss = self.cal_loss(logits, data[1].to(self.device))
-                losses.append(loss.item())
+        pbar = tqdm(self.dataloader, total=len(self.dataloader), desc=f"Train({epoch})", leave=True)
+        for step, data in enumerate(pbar):
+            # data[0] = inputs
+            # data[1] = outputs
+            # data[2] = item
+            logits = self.model((data[0]).to(self.device))
+            # Shape of logits :
+            # Shape of logits.view(-1, logits.size(2)) :
+            # shape of data['output'].view(-1)  :
+            loss = self.cal_loss(logits, data[1].to(self.device))
+            losses.append(loss.item())
 
-                loss.backward()
-                self.optimizer.step()
+            loss.backward()
+            self.optimizer.step()
 
-                pbar.set_postfix_str(f"one epoch Loss: {loss:.3f} Avg Loss in batch: {np.mean(losses):.3f}")
+            pbar.set_postfix_str(f"one epoch Loss: {loss:.3f} Avg Loss in batch: {np.mean(losses):.3f}")
 
         return np.mean(losses)
 
@@ -121,8 +121,9 @@ class Engine():
             print(f"Training Start...")
             start_time = time.time()
             losses = []
-            with tqdm(range(self.cfg.dataset_info['epoch']), desc="Epoch") as pbar:
-
+            # pbar = tqdm(range(self.cfg.dataset_info['epoch']), desc="Epoch")
+            # for epoch in enumerate(pbar):
+            for epoch in range(self.cfg.dataset_info['epoch']):
                 # Clear CUDA cache which is used for training.
                 torch.cuda.empty_cache()
 
@@ -139,10 +140,10 @@ class Engine():
                 torch.save({'model:':self.model.state_dict()},
                                self.save_path + self.cfg.weight_info['save_model_name'])
                 #
-
-                pbar.set_postfix_str(f"Curr Loss: {loss:.3f}, Avg Loss: {np.mean(losses):.3f}")
+                print(f"Curr Loss: {loss:.3f}, Avg Loss: {np.mean(losses):.3f}")
+                # pbar.set_postfix_str(f"Curr Loss: {loss:.3f}, Avg Loss: {np.mean(losses):.3f}")
                 #
-                epoch += 1
+                # epoch += 1
             print(f'\nTraining completed in {(time.time() - start_time) / 3600:.3f} hours.')
 
         except Exception as _:
@@ -165,10 +166,8 @@ class Engine():
 
 if __name__ == '__main__':
     from abstract_structure.config.train_config import get_config_dict
-
     #
     cfg = get_config_dict()
-    #
     if cfg.device['gpu_id'] is not None:
         device = torch.device('cuda:{}'.format(cfg.device['gpu_id']))
         torch.cuda.set_device(cfg.device['gpu_id'])
@@ -176,5 +175,11 @@ if __name__ == '__main__':
         device = torch.device('cpu')
     #
     engine = Engine(cfg, mode='train',device=device)
-    #
     engine.start_train()
+    #
+    from abstract_structure.model.gptGeneration import GPT2Generation
+
+    generator = GPT2Generation(cfg=cfg, device=device)
+
+    words = generator.generate('electronic engineering is')
+    print(words)

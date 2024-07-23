@@ -51,8 +51,8 @@ def get_config_dict():
         dropout=0.1,
         pad_idx=0,
         #
-        batch_train=2,
-        batch_eval=2,
+        batch_train=64,
+        batch_eval=64,
         epoch=100,
     )
 

@@ -72,11 +72,7 @@ class MultiHeadAttention(BaseAttention):
         super().__init__()
         self.heads = heads
 
-    def forward(self,
-                q:torch.Tensor,
-                k:torch.Tensor,
-                v:torch.Tensor,
-                mask=None) -> torch.Tensor:
+    def forward(self, q:torch.Tensor,  k:torch.Tensor,  v:torch.Tensor, mask=None) -> torch.Tensor:
         # Split the tensor to multi-heads
         q_dim = q.size(-1)
         k_dim = k.size(-1)
@@ -93,15 +89,9 @@ class MultiHeadAttention(BaseAttention):
         if mask is not None:
             mask=mask.unsqueeze(-3)
 
-        # Calculate multi-headed attentions and merge them into one
-        #   shape of q:
-        #   shape of k:
-        #   shape of v:
         out_MSA = super().forward(q, k, v, mask)
-        # Shape of out_MSA:
 
         out_MSA = out_MSA.view(q.size()[:-3] + (q.size(-2), v.size(-1) * self.heads))
-        # Shape of out_MSA:
         return out_MSA
 
 class AttentionLayer(nn.Module):
@@ -293,11 +283,7 @@ class TransformerLayer(nn.Module):
     ===========================================================================
     """
     def __init__(self,
-                 heads: int,
-                 dims: int,
-                 rate: int,
-                 training: bool = True,
-                 dropout: float = 0.1):
+                 heads: int,  dims: int, rate: int,training: bool = True,dropout: float = 0.1):
         super().__init__()
 
         self.attn = AttentionLayer(heads, dims, dropout)
@@ -319,10 +305,9 @@ class TransformerLayer(nn.Module):
 
         x = x + a
         x = x + self.ff(self.ln_ff(x))
-
         return x if self.training else (x, past)
 
-class Transformer(nn.Module):
+class ModelEngine(nn.Module):
     """
     Tensor          Type            Shape
     ===========================================================================

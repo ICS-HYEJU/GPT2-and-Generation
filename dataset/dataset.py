@@ -35,7 +35,7 @@ class TokenizedCorpus(Dataset):
         #
         self.corpus_path = config.dataset_info['corpus_path']
         print("Data Loading...")
-        self.corpus_file = sorted(glob.glob(self.corpus_path + '/*.json'))
+        self.corpus_file = glob.glob(self.corpus_path + '/*.json')
         print("Loading complete")
 
     def __len__(self):

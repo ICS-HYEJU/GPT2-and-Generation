@@ -15,7 +15,6 @@ def create_dataloader(config, mode="train"):
             shuffle=True,
             collate_fn = TokenizedCorpus.collate_fn
         )
-    #
     elif mode == 'eval':
         print("eval_mode")
         object = TokenizedCorpus(config)
