@@ -1,27 +1,12 @@
 import torch
 import torch.nn as nn
 
-import torch.nn.functional as F
-from copy import deepcopy
-
 import numpy as np
-import json
 
 import os
-import sentencepiece as spm
 
 from tqdm import tqdm
 import time
-from tqdm.notebook import tqdm as tqdm_notebook
-from tqdm.notebook import trange
-
-import math
-
-from typing import Dict, Tuple
-
-import torch.optim as optim
-from torch.optim import AdamW as Adam
-from torch.nn import LayerNorm
 
 
 class Engine():
@@ -34,7 +19,7 @@ class Engine():
         self.save_path = self.make_save_path()
 
         # ===== TensorBoard =====
-        #self.tblogger = SummaryWirtier(self.save_path)
+        # self.tblogger = SummaryWirtier(self.save_path)
 
         # ===== DataLoader =====
         self.dataloader = self.get_dataloader()
@@ -44,10 +29,10 @@ class Engine():
         # self.ge_model = self.build_ge_model()
 
         # ===== Optimizer =====
-        self.optimizer =self.build_optimizer()
+        self.optimizer = self.build_optimizer()
 
         # ===== Scheduler =====
-        self.scheduler =self.build_scheduler()
+        self.scheduler = self.build_scheduler()
 
         # ===== Loss =====
         self.criterion = self.set_criterion()
@@ -137,8 +122,8 @@ class Engine():
                 self.scheduler.step()
 
                 # Save
-                torch.save({'model:':self.model.state_dict()},
-                               self.save_path + self.cfg.weight_info['save_model_name'])
+                torch.save({'model:': self.model.state_dict()},
+                           self.save_path + self.cfg.weight_info['save_model_name'])
                 #
                 print(f"Curr Loss: {loss:.3f}, Avg Loss: {np.mean(losses):.3f}")
                 # pbar.set_postfix_str(f"Curr Loss: {loss:.3f}, Avg Loss: {np.mean(losses):.3f}")
@@ -165,7 +150,8 @@ class Engine():
 
 
 if __name__ == '__main__':
-    from abstract_structure.config.train_config import get_config_dict
+    from config.train_config import get_config_dict
+
     #
     cfg = get_config_dict()
     if cfg.device['gpu_id'] is not None:
@@ -174,10 +160,10 @@ if __name__ == '__main__':
     else:
         device = torch.device('cpu')
     #
-    engine = Engine(cfg, mode='train',device=device)
+    engine = Engine(cfg, mode='train', device=device)
     engine.start_train()
     #
-    from abstract_structure.model.gptGeneration import GPT2Generation
+    from model.gptGeneration import GPT2Generation
 
     generator = GPT2Generation(cfg=cfg, device=device)
 

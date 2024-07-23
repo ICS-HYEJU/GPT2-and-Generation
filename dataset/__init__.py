@@ -1,8 +1,9 @@
 from torch.utils.data import DataLoader
 
+
 def create_dataloader(config, mode="train"):
     if config.dataset_info['dataset_name']:
-        from abstract_structure.dataset.dataset import TokenizedCorpus
+        from dataset.dataset import TokenizedCorpus
     else:
         raise ValueError("Invalid dataset name, currently supported [ kowiki_small ]")
     #
@@ -13,7 +14,7 @@ def create_dataloader(config, mode="train"):
             object,
             batch_size=config.dataset_info['batch_train'],
             shuffle=True,
-            collate_fn = TokenizedCorpus.collate_fn
+            collate_fn=TokenizedCorpus.collate_fn
         )
     elif mode == 'eval':
         print("eval_mode")

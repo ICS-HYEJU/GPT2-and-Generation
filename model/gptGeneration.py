@@ -1,31 +1,11 @@
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
-
-import torch.nn.functional as F
-from copy import deepcopy
-
-import numpy as np
-import json
-import glob
 import os
 import sentencepiece as spm
 
-from tqdm import tqdm
-from tqdm.notebook import tqdm as tqdm_notebook
-from tqdm.notebook import trange
-
-import math
-
-from typing import Dict, Tuple
-
-import torch.optim as optim
-from torch.optim import AdamW as Adam
-from torch.nn import LayerNorm
-
 
 class GPT2Generation():
-    def __init__(self,cfg, device):
+    def __init__(self, cfg, device):
         self.cfg = cfg
         self.device = device
         self.saved_vocab = self.cfg.dataset_info['vocab_path']
@@ -33,7 +13,6 @@ class GPT2Generation():
         self.vocab = self.load_vocab_tokenizer()
         self.ge_model = self.construct_model()
         # self.state = self.load_state()
-
 
     def load_vocab_tokenizer(self):
         assert self.saved_vocab is not None and os.path.exists(self.saved_vocab), "No kowiki_small.vocab"
@@ -56,28 +35,29 @@ class GPT2Generation():
         return ge_model.to(self.device)
 
     def load_state(self):
-        assert os.path.exists(self.cfg.generation_info['from_saved_model']), "There is no saved weight file...{}".format(
+        assert os.path.exists(
+            self.cfg.generation_info['from_saved_model']), "There is no saved weight file...{}".format(
             self.cfg.generation_info['from_saved_model'])
         #
         state_dict = torch.load(self.cfg.generation_info['from_saved_model'], map_location=self.device)
         state = self.ge_model.load_state_dict(state_dict['model'])
         return state
 
-    def encode_context(self, context:str):
+    def encode_context(self, context: str):
         tokens = [self.vocab.PieceToId(t) for t in self.vocab.EncodeAsPieces(context)]
         tokens = [self.vocab.bos_id()] + tokens
         return tokens
 
-    def decode_tokens(self, tokens)->str:
+    def decode_tokens(self, tokens) -> str:
         if self.vocab.eos_id() in tokens:
-            tokens = tokens[:tokens.index(self.vocab.eos_id())+1]
+            tokens = tokens[:tokens.index(self.vocab.eos_id()) + 1]
         return self.vocab.DecodeIds(tokens)
 
-    def generate(self, context:str)->str:
+    def generate(self, context: str) -> str:
         words = self.encode_context(context)
 
         current, past = words, None
-        while(len(words) < self.cfg.dataset_info['n_seq']):
+        while (len(words) < self.cfg.dataset_info['n_seq']):
             current = [current]
             # Predict the Next word token from the given context
             probs, past = self._predict_probs(current, past)
@@ -96,7 +76,7 @@ class GPT2Generation():
         logits = logits.float().to(self.device)
         logits = logits[0]
 
-        return logits[-1,:].softmax(dim=-1), past
+        return logits[-1, :].softmax(dim=-1), past
 
     def _sample_from_top_p(self, probs: torch.Tensor) -> int:
         probs, indices = probs.sort(descending=True)
@@ -116,8 +96,10 @@ class GPT2Generation():
 
         return sampled_indices
 
+
 if __name__ == '__main__':
-    from abstract_structure.config.train_config import get_config_dict
+    from config.train_config import get_config_dict
+
     cfg = get_config_dict()
 
     if cfg.device['gpu_id'] is not None:
@@ -130,4 +112,3 @@ if __name__ == '__main__':
 
     words = generator.generate('electronic engineering is')
     print(words)
-

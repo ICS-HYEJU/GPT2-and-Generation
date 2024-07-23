@@ -1,29 +1,13 @@
 import torch
-import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
-
-import torch.nn.functional as F
-from copy import deepcopy
-
-import numpy as np
 import json
 import glob
 import os
 import sentencepiece as spm
 
-from tqdm import tqdm
-from tqdm.notebook import tqdm as tqdm_notebook
-from tqdm.notebook import trange
+from config.train_config import Config
 
-import math
 
-from typing import Dict, Tuple
-
-import torch.optim as optim
-from torch.optim import AdamW as Adam
-from torch.nn import LayerNorm
-
-from abstract_structure.config.train_config import Config
 class TokenizedCorpus(Dataset):
     def __init__(self, config, mode='train'):
         #
@@ -83,7 +67,7 @@ class TokenizedCorpus(Dataset):
             vocab = spm.SentencePieceProcessor()
             vocab.Load(self.saved_vocab)
             #
-            assert self.vocab.vocab_size() -7 == self.config.dataset_info['n_vocab'], \
+            assert self.vocab.vocab_size() - 7 == self.config.dataset_info['n_vocab'], \
                 "the size of vocabulary is not the same..."
             #
             print("[SubTokenizer] Loading Completed....")
@@ -105,10 +89,9 @@ class TokenizedCorpus(Dataset):
         return batch
 
 
-
-
 if __name__ == '__main__':
-    from abstract_structure.config.train_config import get_config_dict
+    from config.train_config import get_config_dict
+
     config = Config(get_config_dict())
 
     obj = TokenizedCorpus(config)
